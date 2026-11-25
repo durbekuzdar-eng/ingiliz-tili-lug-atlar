@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit 3 — Madaniy Vizual Flashcards (🇺🇸 vs 🇺🇿)</title>
+    <style>
+        :root {
+            --bg-dark: #0b1120;
+            --surface: rgba(30, 41, 59, 0.75);
+            --en-accent: #3b82f6;
+            --en-glow: rgba(59, 130, 246, 0.35);
+            --uz-accent: #10b981;
+            --uz-glow: rgba(16, 185, 129, 0.35);
+            --gold: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top left, #1e293b, #0b1120 70%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            color: #f8fafc;
+        }
+
+        .app-wrapper {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        /* Yuqori statistika paneli */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface);
+            backdrop-filter: blur(12px);
+            padding: 12px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 14px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .direction-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .direction-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Progress Bar */
+        .progress-section {
+            margin-bottom: 16px;
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            height: 7px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--en-accent), var(--uz-accent));
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        /* 3D Kartochka sahnasi */
+        .card-scene {
+            width: 100%;
+            height: 440px;
+            perspective: 1400px;
+            margin-bottom: 18px;
+            cursor: pointer;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.7s cubic-bezier(0.34, 1.45, 0.64, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 24px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.6);
+            user-select: none;
+        }
+
+        /* OLD TARAF (Ingliz / G'arb muhiti) */
+        .card-front {
+            background: #ffffff;
+            color: #0f172a;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* ORQA TARAF (O'zbek / Milliy muhit) */
+        .card-back {
+            background: linear-gradient(160deg, #064e3b 0%, #065f46 50%, #047857 100%);
+            color: #ffffff;
+            transform: rotateY(180deg);
+            border: 2px solid rgba(52, 211, 153, 0.4);
+        }
+
+        /* Rasm qismi (Kartochkaning yuqori 52% qismi) */
+        .visual-stage {
+            position: relative;
+            width: 100%;
+            height: 220px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-front .visual-stage {
+            background: linear-gradient(135deg, #dbeafe, #eff6ff);
+        }
+
+        .card-back .visual-stage {
+            background: linear-gradient(135deg, #022c22, #064e3b);
+        }
+
+        .visual-stage img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease, opacity 0.4s ease;
+        }
+
+        .card-scene:hover .visual-stage img {
+            transform: scale(1.05);
+        }
+
+        /* Rasm yuklanayotganda yoki fallback bo'lganda ko'rinadigan kreativ emoji sahna */
+        .emoji-fallback {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            z-index: 1;
+        }
+
+        .emoji-big {
+            font-size: 72px;
+            filter: drop-shadow(0 8px 16px rgba(0,0,0,0.2));
+            animation: floatEmoji 3s ease-in-out infinite;
+        }
+
+        @keyframes floatEmoji {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .visual-stage img.loaded {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Madaniyat belgisi (Flag Badge) */
+        .culture-pill {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            z-index: 5;
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .card-front .culture-pill {
+            background: rgba(15, 23, 42, 0.78);
+            color: #ffffff;
+        }
+
+        .card-back .culture-pill {
+            background: rgba(255, 255, 255, 0.92);
+            color: #064e3b;
+        }
+
+        /* Ovoz tugmalari rasm ustida */
+        .audio-floating {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 5;
+            display: flex;
+            gap: 6px;
+        }
+
+        .sound-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            color: #0f172a;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+
+        .sound-btn:hover { transform: scale(1.1); }
+
+        /* Rasm ostidagi kontekst yorlig'i */
+        .scene-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 4;
+            padding: 18px 14px 8px;
+            background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        /* Matn qismi (Kartochkaning pastki 48% qismi) */
+        .content-stage {
+            flex: 1;
+            padding: 18px 22px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .main-word {
+            font-size: 30px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .example-sentence {
+            font-size: 14px;
+            line-height: 1.4;
+            padding: 8px 14px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            width: 100%;
+        }
+
+        .card-front .example-sentence {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .card-back .example-sentence {
+            background: rgba(255, 255, 255, 0.14);
+            color: #ecfdf5;
+        }
+
+        .cultural-note {
+            font-size: 12px;
+            opacity: 0.85;
+            font-style: italic;
+        }
+
+        /* Pastki boshqaruv tugmalari */
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            padding: 15px;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.15s, filter 0.2s;
+        }
+
+        .btn:active { transform: scale(0.97); }
+
+        .btn-repeat {
+            background: rgba(239, 68, 68, 0.18);
+            border: 2px solid #ef4444;
+            color: #fca5a5;
+        }
+        .btn-repeat:hover { background: #ef4444; color: #fff; }
+
+        .btn-mastered {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
+        }
+        .btn-mastered:hover { filter: brightness(1.08); }
+
+        .utility-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .util-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .util-btn:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+
+        /* Yakuniy ekran */
+        .finish-box {
+            display: none;
+            background: #ffffff;
+            color: #0f172a;
+            padding: 40px 24px;
+            border-radius: 24px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+    <!-- Yuqori panel -->
+    <div class="top-bar">
+        <div class="stat" style="color:#fb923c;">🔥 <span id="streak">0</span></div>
+        <div class="stat" style="color:#38bdf8;">⚡ <span id="xp">0</span> XP</div>
+        <div class="stat" style="color:#34d399;">🏆 <span id="done-count">0</span>/82</div>
+        <button class="direction-toggle" id="dir-btn" onclick="toggleDirection()">🇺🇸 ➔ 🇺🇿</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-section">
+        <div class="progress-labels">
+            <span id="remaining-label">Qolgan so‘zlar: 82 ta</span>
+            <span id="percent-label">0%</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- 3D Kartochka -->
+    <div class="card-scene" id="card-scene" onclick="flipCard()">
+        <div class="card" id="card">
+            <!-- OLD TARAF -->
+            <div class="card-face card-front" id="face-front">
+                <div class="visual-stage">
+                    <span class="culture-pill" id="front-pill">🇺🇸 Western / English Context</span>
+                    <div class="audio-floating">
+                        <button class="sound-btn" onclick="speakWord(event, 0.9)" title="Talaffuz">🔊</button>
+                        <button class="sound-btn" onclick="speakWord(event, 0.55)" title="Sekin">🐢</button>
+                    </div>
+                    <div class="emoji-fallback">
+                        <div class="emoji-big" id="front-emoji">🍔</div>
+                    </div>
+                    <img id="front-img" alt="Western context" onload="this.classList.add('loaded')" onerror="this.style.display='none'">
+                    <div class="scene-caption" id="front-caption">🇺🇸 G‘arb oshxonasi: Burger va Fast-food</div>
+                </div>
+                <div class="content-stage">
+                    <div class="main-word" id="front-word">FOOD</div>
+                    <div class="example-sentence" id="front-ex">"Healthy food gives you energy."</div>
+                    <div class="cultural-note" id="front-hint">Kartochkani bosing — O‘zbekiston muhitidagi ko‘rinishi chiqadi 👆</div>
+                </div>
+            </div>
+
+            <!-- ORQA TARAF -->
+            <div class="card-face card-back" id="face-back">
+                <div class="visual-stage">
+                    <span class="culture-pill" id="back-pill">🇺🇿 O‘zbekiston Muhiti</span>
+                    <div class="audio-floating">
+                        <button class="sound-btn" onclick="speakExample(event)" title="Misolni eshitish">🗣️</button>
+                    </div>
+                    <div class="emoji-fallback">
+                        <div class="emoji-big" id="back-emoji">🍲</div>
+                    </div>
+                    <img id="back-img" alt="Uzbekistan context" onload="this.classList.add('loaded')" onerror="this.style.display='none'">
+                    <div class="scene-caption" id="back-caption">🇺🇿 O‘zbek dasturxoni: Milliy taomlar</div>
+                </div>
+                <div class="content-stage">
+                    <div class="main-word" id="back-word">Ovqat, oziq-ovqat</div>
+                    <div class="example-sentence" id="back-ex">Sog‘lom ovqat sizga kuch beradi.</div>
+                    <div class="cultural-note" id="back-note">💡 Madaniy kod: G‘arbda ko‘proq sendvich/burger, O‘zbekistonda esa issiq osh va sho‘rva!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Baholash tugmalari -->
+    <div class="action-grid" id="controls-area">
+        <button class="btn btn-repeat" onclick="markHard()">🔄 Yana qaytaraman</button>
+        <button class="btn btn-mastered" onclick="markEasy()">✅ Yodladim!</button>
+    </div>
+
+    <!-- Yordamchi tugmalar -->
+    <div class="utility-row">
+        <button class="util-btn" onclick="shuffleWords()">🔀 Aralashtirish</button>
+        <button class="util-btn" onclick="resetProgress()">🔁 Qaytadan boshlash</button>
+    </div>
+
+    <!-- Yakuniy tabrik -->
+    <div class="finish-box" id="finish-box">
+        <div style="font-size:64px; margin-bottom:10px;">🏆</div>
+        <h2>Tabriklaymiz!</h2>
+        <p style="color:#64748b; margin:10px 0 24px;">Barcha 82 ta so‘zni ikki xil madaniy tasavvur bilan yodlab bo‘ldingiz!</p>
+        <button class="btn btn-mastered" style="width:100%" onclick="resetProgress()">Qaytadan mashq qilish</button>
+    </div>
+</div>
+
+<script>
+    // Har bir so'z uchun G'arb (enQuery/enEmoji) va O'zbekiston (uzQuery/uzEmoji) vizual sahnalari
+    const cardsData = [
+        { en: "FOOD", uz: "Ovqat, oziq-ovqat", enEmoji: "🍔🍟", uzEmoji: "🍲🥟", enCap: "🇺🇸 G‘arb: Burger, steyk va salat", uzCap: "🇺🇿 O‘zbekiston: Palov, manti va milliy taomlar", enQuery: "american burger meal", uzQuery: "uzbek plov traditional food", exEn: "Healthy food gives you energy.", exUz: "Sog‘lom ovqat sizga kuch beradi.", note: "AQSHda tezkor ovqatlanish (fast-food) keng tarqalgan, O‘zbekistonda esa dasturxon atrofida jamlanish muhim." },
+        { en: "DRINK", uz: "Ichimlik / ichmoq", enEmoji: "🥤🧊", uzEmoji: "🫖🍵", enCap: "🇺🇸 G‘arb: Muzli kola va smuzi", uzCap: "🇺🇿 O‘zbekiston: Choynakda ko‘k choy va ayron", enQuery: "iced soda glass", uzQuery: "uzbek green tea teapot", exEn: "What would you like to drink?", exUz: "Nima ichishni xohlaysiz?", note: "G‘arb restoranlarida birinchi bo‘lib muzli suv beriladi, O‘zbekistonda esa issiq choy." },
+        { en: "SEE", uz: "Ko‘rmoq", enEmoji: "🗽👀", uzEmoji: "🕌👀", enCap: "🇺🇸 Nyu-York manzarasini ko‘rish", uzCap: "🇺🇿 Samarqand Registonini ko‘rish", enQuery: "new york skyline view", uzQuery: "samarkand registan", exEn: "I can see the mountains from here.", exUz: "Men bu yerdan tog‘larni ko‘ra olaman.", note: "Vizual xotira: o‘zingiz ko‘rgan joylar bilan bog‘lang." },
+        { en: "SHOPPING TROLLEY", uz: "Xarid aravachasi", enEmoji: "🛒🏬", uzEmoji: "🧺🍉", enCap: "🇺🇸 Walmart supermarket aravachasi", uzCap: "🇺🇿 Chorsu bozori va savatlar", enQuery: "supermarket shopping cart", uzQuery: "uzbekistan bazaar market", exEn: "Put the milk in the shopping trolley.", exUz: "Sutni xarid aravachasiga soling.", note: "Britaniyada 'shopping trolley', AQSHda esa 'shopping cart' deyiladi." },
+        { en: "DISLIKE", uz: "Yoqtirmaslik", enEmoji: "😒🥦", uzEmoji: "😖🍋", enCap: "🇺🇸 Brokkolini yoqtirmaslik", uzCap: "🇺🇿 Achchiq narsani yoqtirmaslik", enQuery: "disgusted face food", uzQuery: "sour lemon face", exEn: "I dislike cold weather.", exUz: "Men sovuq ob-havoni yoqtirmayman.", note: "'Dis-' old qo‘shimchasi so‘zga teskari ma'no beradi (like ➔ dislike)." },
+        { en: "BUY", uz: "Sotib olmoq", enEmoji: "💳🛍️", uzEmoji: "💵🍈", enCap: "🇺🇸 Karta orqali xarid qilish", uzCap: "🇺🇿 Bozorda savdolashib sotib olish", enQuery: "credit card shopping", uzQuery: "uzbek melon market", exEn: "We need to buy some bread.", exUz: "Biz biroz non sotib olishimiz kerak.", note: "O‘zbek bozorlarida savdolashish — madaniyatning bir qismi!" },
+        { en: "BREAD", uz: "Non", enEmoji: "🍞🥪", uzEmoji: "🫓🔥", enCap: "🇺🇸 AQSH: To‘rtburchak toster non (Loaf)", uzCap: "🇺🇿 O‘zbekiston: Tandirdan uzilgan issiq patir", enQuery: "sliced toast bread", uzQuery: "uzbek tandoor bread non", exEn: "Fresh bread smells amazing.", exUz: "Yangi uzilgan nonning hidi ajoyib.", note: "G‘arbda non pichoq bilan kesiladi, O‘zbekistonda esa qo‘l bilan sindiriladi va e'zozlanadi." },
+        { en: "COFFEE", uz: "Qahva", enEmoji: "☕🗽", uzEmoji: "🫖🌿", enCap: "🇺🇸 Nyu-York: Qo‘lda katta stakan kofe", uzCap: "🇺🇿 Toshkent: Choyxonada choy va qahva", enQuery: "takeaway coffee cup", uzQuery: "oriental coffee tea", exEn: "He drinks black coffee every morning.", exUz: "U har kuni ertalab qora qahva ichadi.", note: "Amerikaliklar ertalab ishga ketayotganda yo‘lda 'to-go' kofe ichishni yaxshi ko‘rishadi." },
+        { en: "COLA", uz: "Kola", enEmoji: "🥤🍔", uzEmoji: "🥤🍢", enCap: "🇺🇸 Amerika klassikasi: Coca-Cola", uzCap: "🇺🇿 O‘zbekistonda shashlik bilan muzdek kola", enQuery: "cola glass ice", uzQuery: "shashlik kebab drink", exEn: "A cold glass of cola, please.", exUz: "Bir stakan muzdek kola, iltimos.", note: "Kola 1886-yilda AQSHning Atlanta shahrida ixtiro qilingan." },
+        { en: "EGGS", uz: "Tuxumlar", enEmoji: "🍳🥓", uzEmoji: "🥚🍅", enCap: "🇺🇸 Inglizcha/Amerikacha quymoq", uzCap: "🇺🇿 O‘zbekona pomidor-tuxum qovurma", enQuery: "fried eggs bacon breakfast", uzQuery: "shakshuka tomato eggs", exEn: "I eat two boiled eggs for breakfast.", exUz: "Nonushtaga ikkita qaynatilgan tuxum yeyman.", note: "Ko‘plik shakli: bitta — egg, ko‘p — eggs." },
+        { en: "FISH", uz: "Baliq", enEmoji: "🐟🍟", uzEmoji: "🐟🔥", enCap: "🇬🇧 Britaniya: Mashhur 'Fish and Chips'", uzCap: "🇺🇿 O‘zbekiston: Qovurilgan zog‘ora baliq", enQuery: "fish and chips british", uzQuery: "fried fish dish", exEn: "Fish is very good for your brain.", exUz: "Baliq miyangiz uchun juda foydali.", note: "Buyuk Britaniyada 'Fish and Chips' eng mashhur milliy taom hisoblanadi." },
+        { en: "FRUIT", uz: "Meva", enEmoji: "🍎🍌", uzEmoji: "🍇🍑", enCap: "🇺🇸 Amerika: Qizil olma va banan", uzCap: "🇺🇿 Farg‘ona vodiysi: Shirin uzum, anor va shaftoli", enQuery: "red apple fruit", uzQuery: "uzbekistan grapes pomegranate", exEn: "Eat fresh fruit every day.", exUz: "Har kuni yangi meva yeng.", note: "O‘zbekiston mevalari quyosh nuri ko‘pligi sababli dunyoda eng shirin mevalardan sanaladi!" },
+        { en: "VEGETABLES", uz: "Sabzavotlar", enEmoji: "🥦🥕", uzEmoji: "🍅🥒", enCap: "🇺🇸 G‘arb: Brokkoli va selderey", uzCap: "🇺🇿 O‘zbekiston: Pomidor, bodring va sariq sabzi", enQuery: "broccoli carrots vegetables", uzQuery: "tomatoes cucumbers bazaar", exEn: "Green vegetables are rich in vitamins.", exUz: "Yashil sabzavotlar vitaminlarga boy.", note: "O‘zbek oshi uchun maxsus sariq sabzi yetishtiriladi." },
+        { en: "FRUIT JUICE", uz: "Meva sharbati", enEmoji: "🧃🍊", uzEmoji: "🍷🍒", enCap: "🇺🇸 Ertalabki apelsin sharbati", uzCap: "🇺🇿 Tabiiy anor va olcha sharbati", enQuery: "orange juice glass", uzQuery: "pomegranate juice fresh", exEn: "Children love sweet fruit juice.", exUz: "Bolalar shirin meva sharbatini yaxshi ko‘rishadi.", note: "AQSHda nonushtada apelsin sharbati (OJ) ichish odat tusiga kirgan." },
+        { en: "MEAT", uz: "Go‘sht", enEmoji: "🥩🔥", uzEmoji: "🍖🍢", enCap: "🇺🇸 Texas: Katta mol go‘shti steyki", uzCap: "🇺🇿 O‘zbekiston: Tandir go‘sht va qo‘y go‘shti", enQuery: "grilled beef steak", uzQuery: "uzbek tandoor meat", exEn: "Vegetarians do not eat meat.", exUz: "Vegetarianlar go‘sht yeyishmaydi.", note: "Talaffuziga e'tibor bering: 'meat' (go‘sht) va 'meet' (uchrashmoq) bir xil o‘qiladi!" },
+        { en: "MILK", uz: "Sut", enEmoji: "🥛🍪", uzEmoji: "🥛🫓", enCap: "🇺🇸 AQSH: Pechenye bilan sut", uzCap: "🇺🇿 Qishloq tongi: Issiq sut va qaymoq", enQuery: "glass of milk cookies", uzQuery: "fresh milk cream", exEn: "Do you take milk in your tea?", exUz: "Choyingizga sut qo‘shasizmi?", note: "Angliyada choyga albatta sut qo‘shib ichishadi (British tea)." },
+        { en: "RICE", uz: "Guruch", enEmoji: "🍚🥢", uzEmoji: "🥘🇺🇿", enCap: "🇺🇸 G‘arb/Osiyo: Oq qaynatilgan guruch", uzCap: "🇺🇿 O‘zbekiston: Devzira guruchdan shohona osh!", enQuery: "white steamed rice bowl", uzQuery: "uzbek pilaf plov rice", exEn: "Plov is made with rice and meat.", exUz: "Osh guruch va go‘shtdan tayyorlanadi.", note: "O‘zbek palovi YUNESKO nomoddiy madaniy merosi ro‘yxatiga kiritilgan." },
+        { en: "TEA", uz: "Choy", enEmoji: "🫖🥛", uzEmoji: "🫖🇺🇿", enCap: "🇬🇧 London: Sutli qora choy (5 o'clock tea)", uzCap: "🇺🇿 Toshkent/Farg‘ona: Paxta gulli piyolada ko‘k choy", enQuery: "english tea cup milk", uzQuery: "uzbek piala green tea", exEn: "Green tea is very popular in Uzbekistan.", exUz: "Ko‘k choy O‘zbekistonda juda mashhur.", note: "O‘zbekistonda mehmonni hurmat qilib piyolaga choy oz-ozdan quyib uzatiladi." },
+        { en: "WATER", uz: "Suv", enEmoji: "💧🥤", uzEmoji: "🏔️💧", enCap: "🇺🇸 Plastik idishdagi mineral suv", uzCap: "🇺🇿 Chimyondagi musaffo tog‘ bulog‘i suvi", enQuery: "glass of clear water", uzQuery: "mountain spring water", exEn: "Drink at least two liters of water.", exUz: "Kamida ikki litr suv iching.", note: "Water — sanalmaydigan ot (uncountable noun), shuning uchun 'waters' deyilmaydi." },
+        { en: "PRONUNCIATION", uz: "Talaffuz", enEmoji: "🗣️🇺🇸", uzEmoji: "🎙️🇺🇿", enCap: "🇺🇸 Amerika/Britaniya aksenti", uzCap: "🇺🇿 Aniq va ravon o‘zbekona talaffuz", enQuery: "speaking microphone voice", uzQuery: "radio host speaking", exEn: "Your English pronunciation is great.", exUz: "Inglizcha talaffuzingiz ajoyib.", note: "Yozilishiga qarang: pronounce (fe'l), lekin pronunciation (ot) — 'o' harfi tushib qoladi!" },
+        { en: "WEEK", uz: "Hafta", enEmoji: "📅🇺🇸", uzEmoji: "🗓️🇺🇿", enCap: "🇺🇸 AQSH taqvimi: Yakshanbadan boshlanadi", uzCap: "🇺🇿 O‘zbekiston taqvimi: Dushanbadan boshlanadi", enQuery: "calendar week planner", uzQuery: "monday calendar schedule", exEn: "There are seven days in a week.", exUz: "Bir haftada yetti kun bor.", note: "Qiziq fakt: AQSH va Britaniyada kalendar haftasi Sunday (Yakshanba) dan boshlanadi!" },
+        { en: "EAT", uz: "Yemoq", enEmoji: "🍴🍕", uzEmoji: "🥄🍲", enCap: "🇺🇸 Sanchqi va pichoq bilan yeyish", uzCap: "🇺🇿 Milliy taomlarni ishtaha bilan yeyish", enQuery: "eating pizza fork", uzQuery: "eating traditional meal", exEn: "Let's eat together tonight.", exUz: "Keling, bugun kechqurun birga ovqatlanamiz.", note: "O‘tgan zamoni noto‘g‘ri fe'l: eat ➔ ate ➔ eaten." },
+        { en: "EVERY DAY", uz: "Har kuni", enEmoji: "🌅🏃", uzEmoji: "☀️📚", enCap: "🇺🇸 Har tong yugurish odati", uzCap: "🇺🇿 Har kuni yangi bilim olish", enQuery: "morning jog sunrise", uzQuery: "student studying books", exEn: "I practice English every day.", exUz: "Men har kuni ingliz tilini mashq qilaman.", note: "Alohida yozilsa (every day) — 'har kuni', qo‘shib yozilsa (everyday) — 'kundalik' degan sifat bo‘ladi." },
+        { en: "WITH", uz: "Bilan", enEmoji: "🤝🇺🇸", uzEmoji: "👨‍👩‍👧‍👦🇺🇿", enCap: "🇺🇸 Do‘stlar bilan sayohat", uzCap: "🇺🇿 Oila davrasida suhbat", enQuery: "friends hiking together", uzQuery: "family dinner together", exEn: "I live with my family.", exUz: "Men oilam bilan yashayman.", note: "Predlog sifatida har doim otdan oldin keladi." },
+        { en: "A LOT OF", uz: "Ko‘p", enEmoji: "📚✨", uzEmoji: "🍉🍇", enCap: "🇺🇸 Ko‘p kitoblar va g‘oyalar", uzCap: "🇺🇿 Bozor to‘la mo‘l-ko‘l ne'matlar", enQuery: "stack of many books", uzQuery: "abundant fruit market", exEn: "She has a lot of friends.", exUz: "Uning do‘stlari juda ko‘p.", note: "'A lot of' ham sanaladigan, ham sanalmaydigan otlar bilan ishlatilaveradi — juda qulay!" },
+        { en: "REALLY", uz: "Haqiqatan / juda", enEmoji: "😲🔥", uzEmoji: "🤩👏", enCap: "🇺🇸 'Really?!' — hayratlanish", uzCap: "🇺🇿 'Haqiqatan ham zo‘r!'", enQuery: "surprised happy person", uzQuery: "amazed smiling person", exEn: "This book is really interesting.", exUz: "Bu kitob haqiqatan ham qiziqarli.", note: "So‘zlashuv nutqida 'very' o‘rniga 'really' ishlatish nutqni tabiiyroq qiladi." },
+        { en: "VEGETARIANS", uz: "Vegetarianlar", enEmoji: "🥗🥑", uzEmoji: "🥗🍅", enCap: "🇺🇸 Avokado va yashil salatlar", uzCap: "🇺🇿 Achchiq-chuchuk va ko‘katli somsalar", enQuery: "avocado green salad bowl", uzQuery: "fresh vegetable salad", exEn: "Vegetarians eat only plant food.", exUz: "Vegetarianlar faqat o‘simlik ovqatlarini yeyishadi.", note: "Go‘sht yemaydigan insonlar." },
+        { en: "DIFFERENT", uz: "Turli xil / boshqacha", enEmoji: "🎨🌈", uzEmoji: "🧵🇺🇿", enCap: "🇺🇸 Turli ranglar va uslublar", uzCap: "🇺🇿 Atlas va adrasning rang-barang naqshlari", enQuery: "colorful paint palette", uzQuery: "uzbek atlas silk pattern", exEn: "We have different opinions.", exUz: "Bizning fikrlarimiz turlicha.", note: "Qarama-qarshi ma'nosi: 'the same' (bir xil)." },
+        { en: "I’D LIKE", uz: "Men xohlardim", enEmoji: "🤵☕", uzEmoji: "🙏🫖", enCap: "🇺🇸 Restoranda muloyim buyurtma", uzCap: "🇺🇿 Mehmondo‘stlik va muloyim taklif", enQuery: "restaurant waiter menu", uzQuery: "uzbek hospitality tea", exEn: "I'd like a cup of tea, please.", exUz: "Men bir piyola choy xohlardim, iltimos.", note: "'I want' dan ko‘ra ancha madaniyatli va chiroyli shakl ('I would like')." },
+        { en: "A PIECE OF", uz: "Bir bo‘lak", enEmoji: "🍰🇺🇸", uzEmoji: "🍉🇺🇿", enCap: "🇺🇸 Nyu-York chizkeyki bo‘lagi", uzCap: "🇺🇿 Yozgi shirin tarvuz tilimi/bo‘lagi", enQuery: "piece of cheesecake", uzQuery: "slice of watermelon", exEn: "Would you like a piece of cake?", exUz: "Bir bo‘lak tort xohlaysizmi?", note: "Sanalmaydigan narsalarni (cake, cheese, paper, advice) sanash uchun ishlatiladi." },
+        { en: "GOOD FOR ME", uz: "Men uchun foydali", enEmoji: "🏃‍♂️💪", uzEmoji: "🍯🥜", enCap: "🇺🇸 Sport zalida mashq qilish", uzCap: "🇺🇿 Tog‘ asali va yong‘oq — koni foyda", enQuery: "fitness running health", uzQuery: "honey and walnuts", exEn: "Running is good for me.", exUz: "Yugurish men uchun foydali.", note: "Qarama-qarshisi: 'bad for me' (men uchun zararli)." },
+        { en: "USUALLY", uz: "Odatda", enEmoji: "⏰💻", uzEmoji: "🌅🫖", enCap: "🇺🇸 Odatda 9:00 da ish boshlash", uzCap: "🇺🇿 Odatda ertalab choy ichish", enQuery: "morning routine laptop", uzQuery: "morning tea routine", exEn: "I usually wake up at 7 AM.", exUz: "Men odatda soat 7 da uyg‘onaman.", note: "Takrorlanish darajasi: ~80% holatlarda." },
+        { en: "SOMETIMES", uz: "Ba’zan", enEmoji: "🎬🍿", uzEmoji: "🏔️🚗", enCap: "🇺🇸 Ba'zan kinoteatrga borish", uzCap: "🇺🇿 Ba'zan tog‘larga dam olishga chiqish", enQuery: "cinema popcorn movie", uzQuery: "uzbekistan mountains trip", exEn: "Sometimes we go to the cinema.", exUz: "Ba’zan biz kinoga boramiz.", note: "Takrorlanish darajasi: ~50% holatlarda." },
+        { en: "ALWAYS", uz: "Har doim", enEmoji: "💯⭐", uzEmoji: "❤️🇺🇿", enCap: "🇺🇸 Har doim vaqtida kelish", uzCap: "🇺🇸 Har doim salomlashish odobi", enQuery: "punctual clock time", uzQuery: "greeting handshake respect", exEn: "He is always on time.", exUz: "U har doim o‘z vaqtida keladi.", note: "Takrorlanish darajasi: 100%!" },
+        { en: "NEVER", uz: "Hech qachon", enEmoji: "🚫🚭", uzEmoji: "🙅‍♂️❌", enCap: "🇺🇸 Hech qachon taslim bo‘lmaslik", uzCap: "🇺🇿 Hech qachon yolg‘on gapirmaslik", enQuery: "never give up sign", uzQuery: "stop sign road", exEn: "I never drink coffee at night.", exUz: "Men kechasi hech qachon qahva ichmayman.", note: "Ingliz tilida bitta gapda ikkita inkor bo‘lmaydi: 'I never eat' (to‘g‘ri), 'I don't never' (xato)." },
+        { en: "OFTEN", uz: "Tez-tez", enEmoji: "📖☕", uzEmoji: "⚽🏟️", enCap: "🇺🇸 Kutubxonaga tez-tez borish", uzCap: "🇺🇿 Do‘stlar bilan tez-tez futbol o‘ynash", enQuery: "reading library books", uzQuery: "playing football friends", exEn: "How often do you read books?", exUz: "Qanchalik tez-tez kitob o‘qiysiz?", note: "'t' harfini talaffuz qilmasdan ('ofen') yoki talaffuz qilib ('often') o‘qish — ikkalasi ham to‘g‘ri." },
+        { en: "BREAKFAST", uz: "Nonushta", enEmoji: "🥞🥓", uzEmoji: "🫓🍯", enCap: "🇺🇸 Amerika nonushtasi: Pankeyk va tuxum", uzCap: "🇺🇿 O‘zbek nonushtasi: Issiq non, qaymoq va asal", enQuery: "american pancakes breakfast", uzQuery: "uzbek breakfast bread tea", exEn: "Breakfast is the most important meal.", exUz: "Nonushta eng muhim taomdir.", note: "So‘zning kelib chiqishi: 'break' (buzmoq) + 'fast' (ro‘za/ochlik) — tungi ochlikni buzish!" },
+        { en: "LUNCH", uz: "Tushlik", enEmoji: "🥪🥗", uzEmoji: "🍲🥗", enCap: "🇺🇸 Ofisda yengil sendvich tushlik", uzCap: "🇺🇿 Tushlikda issiq sho‘rva yoki palov", enQuery: "club sandwich lunch", uzQuery: "uzbek soup shurpa", exEn: "It's 1 PM, time for lunch.", exUz: "Soat 1 bo‘ldi, tushlik vaqti.", note: "G‘arbda tushlik odatda yengil bo‘ladi, asosiy katta ovqat kechqurun yeyiladi." },
+        { en: "DINNER", uz: "Kechki ovqat", enEmoji: "🍝🕯️", uzEmoji: "🥟🫖", enCap: "🇺🇸 Kechki ovqat: Pasta yoki steyk", uzCap: "🇺🇿 Oila jam bo‘ladigan kechki dasturxon", enQuery: "spaghetti dinner table", uzQuery: "uzbek manti dinner", exEn: "We had fish for dinner.", exUz: "Kechki ovqatga baliq yedik.", note: "Kunning eng asosiy taomi." },
+        { en: "NUMBER ONE", uz: "Birinchi raqam", enEmoji: "🥇🏆", uzEmoji: "1️⃣🌟", enCap: "🇺🇸 Chempionlik kubogi", uzCap: "🇺🇿 Birinchi o‘rin va g‘alaba", enQuery: "gold trophy number one", uzQuery: "first place medal", exEn: "Health is always number one.", exUz: "Sog‘liq har doim birinchi o‘rinda.", note: "Eng zo‘r yoki eng muhim narsani bildirish uchun ishlatiladi." },
+        { en: "PASTRY", uz: "Pishiriq", enEmoji: "🥐🇫🇷", uzEmoji: "🥟🔥", enCap: "🇺🇸/🇪🇺 Kruassan va shirin bulochkalar", uzCap: "🇺🇿 Tandir somsa va qatlama", enQuery: "croissant french pastry", uzQuery: "uzbek samsa pastry", exEn: "French pastry is delicious.", exUz: "Fransuz pishiriqlari juda mazali.", note: "Xamirdan tayyorlanadigan barcha shirin va tuzli pishiriqlar." },
+        { en: "TOAST", uz: "Qovurilgan non", enEmoji: "🍞🔥", uzEmoji: "🍞🧈", enCap: "🇺🇸 Tosterda qizartirilgan non", uzCap: "🇺🇿 Sariyog‘ surtilgan qarsildoq non", enQuery: "golden toast butter", uzQuery: "crispy toasted bread", exEn: "I like toast with butter and jam.", exUz: "Men sariyog‘ va murabboli qovurilgan nonni yoqtiraman.", note: "Sanalmaydigan ot: 'two pieces of toast' deyiladi." },
+        { en: "ALSO", uz: "Shuningdek / ham", enEmoji: "➕✨", uzEmoji: "🤝➕", enCap: "🇺🇸 Qo‘shimcha ma'lumot qo‘shish", uzCap: "🇺🇿 'Men ham...' ma'nosida", enQuery: "plus sign modern", uzQuery: "two hands together", exEn: "She speaks English and also Russian.", exUz: "U ingliz va shuningdek rus tilida gapiradi.", note: "Gapda odatda asosiy fe'ldan oldin keladi ('I also like...')." },
+        { en: "BISCUITS", uz: "Pechenyelar", enEmoji: "🍪🇬🇧", uzEmoji: "🍪🫖", enCap: "🇬🇧 Britaniya: Choy bilan 'Biscuits'", uzCap: "🇺🇿 Choy dasturxonida shirin pechenyelar", enQuery: "chocolate chip cookies biscuits", uzQuery: "tea and biscuits", exEn: "Have some biscuits with your tea.", exUz: "Choy bilan pechenye oling.", note: "Britaniyada 'biscuit', AQSHda esa 'cookie' deyiladi!" },
+        { en: "WATCH", uz: "Tomosha qilmoq / soat", enEmoji: "⌚📺", uzEmoji: "⌚🎬", enCap: "🇺🇸 Qo‘l soati yoki TV ko‘rish", uzCap: "🇺🇿 Qiziqarli film tomosha qilish", enQuery: "wristwatch luxury", uzQuery: "watching tv family", exEn: "I watch movies on weekends.", exUz: "Dam olish kunlari kino tomosha qilaman.", note: "Harakatdagi narsalarni (TV, kino, o‘yin) ko‘rish uchun 'watch' ishlatiladi." },
+        { en: "CLOCK", uz: "Soat (devor soati)", enEmoji: "🕰️🇬🇧", uzEmoji: "🕰️🇺🇿", enCap: "🇬🇧 London: Mashhur Big Ben soati", uzCap: "🇺🇿 Toshkent kurantlari soati", enQuery: "big ben london clock", uzQuery: "tashkent chimes clock tower", exEn: "Look at the clock on the wall.", exUz: "Devordagi soatga qarang.", note: "Qo‘l soati — 'watch', devor yoki minora soati — 'clock'." },
+        { en: "QUARTER", uz: "Chorak (15 daqiqa)", enEmoji: "🕒¼", uzEmoji: "🪙¼", enCap: "🇺🇸 15 daqiqa yoki 25 sentlik tanga", uzCap: "🇺🇿 Soatning chorak qismi (15 daqiqa)", enQuery: "clock quarter past", uzQuery: "analog clock time", exEn: "It is a quarter past five.", exUz: "Soat beshdan o‘n besh daqiqa o‘tdi.", note: "AQSHda 25 sentlik tanga ham 'a quarter' deb ataladi!" },
+        { en: "PAST", uz: "O‘tdi", enEmoji: "⏩🕒", uzEmoji: "⏱️➡️", enCap: "🇺🇸 Soat dan daqiqa o‘tganda", uzCap: "🇺🇿 O‘tgan vaqtni ko‘rsatish", enQuery: "clock hands moving", uzQuery: "time passing clock", exEn: "It's ten past eight.", exUz: "Sakkizdan o‘n daqiqa o‘tdi.", note: "1 dan 30 daqiqagacha 'past' ishlatiladi." },
+        { en: "TO", uz: "Gacha / kam", enEmoji: "⏳🕘", uzEmoji: "⌚⬅️", enCap: "🇺🇸 Keyingi soatga qancha qolgani", uzCap: "🇺🇿 '... daqiqasi kam ...'", enQuery: "countdown clock nine", uzQuery: "watch face close up", exEn: "It's five to nine.", exUz: "Besh daqiqasi kam to‘qqiz.", note: "31 dan 59 daqiqagacha keyingi soatga nisbatan 'to' ishlatiladi." },
+        { en: "PARENTS", uz: "Ota-ona", enEmoji: "👨‍👩‍👧🇺🇸", uzEmoji: "👨‍👩‍👦🇺🇿", enCap: "🇺🇸 Ota va ona", uzCap: "🇺🇿 O‘zbek oilasida ota-onaga yuksak ehtirom", enQuery: "happy parents child", uzQuery: "uzbek family parents", exEn: "Respect and love your parents.", exUz: "Ota-onangizni hurmat qiling va seving.", note: "Ehtiyot bo‘ling: 'parents' — ota-ona, 'relatives' — qarindoshlar!" },
+        { en: "WHEN", uz: "Qachon", enEmoji: "❓📅", uzEmoji: "🕰️❓", enCap: "🇺🇸 Vaqtni so‘rash", uzCap: "🇺🇿 'Qachon?' savoli", enQuery: "question mark clock", uzQuery: "calendar date check", exEn: "When does the lesson start?", exUz: "Dars qachon boshlanadi?", note: "Savol so‘zi sifatida gap boshida keladi." },
+        { en: "ABOUT", uz: "Taxminan / haqida", enEmoji: "💬📖", uzEmoji: "🤷‍♂️⌚", enCap: "🇺🇸 Kitob yoki mavzu haqida", uzCap: "🇺🇿 Taxminiy vaqt ('soat 5 lar atrofida')", enQuery: "open book story", uzQuery: "talking friends cafe", exEn: "Tell me about your hobby.", exUz: "Menga qiziqishingiz haqida aytib bering.", note: "Ikki xil ma'nosi bor: 'haqida' va 'taxminan'." },
+        { en: "LATE", uz: "Kech", enEmoji: "🏃‍♂️💨", uzEmoji: "🌃🌙", enCap: "🇺🇸 Avtobusga kech qolish", uzCap: "🇺🇿 Kech tushishi yoki kechikish", enQuery: "running late clock", uzQuery: "night city lights", exEn: "Sorry, I am late!", exUz: "Kechirasiz, kech qoldim!", note: "Qarama-qarshisi: 'early' (erta)." },
+        { en: "EARLY", uz: "Erta", enEmoji: "🌅🐦", uzEmoji: "🌄☀️", enCap: "🇺🇸 Tong saharda uyg‘onish", uzCap: "🇺🇿 'Erta turganning rizqi ulug‘'", enQuery: "early morning sunrise", uzQuery: "sunrise mountains uzbekistan", exEn: "Early birds catch the worm.", exUz: "Erta turganning rizqi ulug‘.", note: "Inglizcha maqol: 'Early bird' — erta turuvchi inson." },
+        { en: "ANSWER", uz: "Javob / javob bermoq", enEmoji: "🙋‍♂️💡", uzEmoji: "✅📝", enCap: "🇺🇸 Darsda qo‘l ko‘tarib javob berish", uzCap: "🇺🇿 Savolga aniq javob topish", enQuery: "student raising hand class", uzQuery: "checkmark exam paper", exEn: "Please answer my question.", exUz: "Iltimos, savolimga javob bering.", note: "Yozilishidagi 'w' harfi o‘qilmaydi ('anser')!" },
+        { en: "ORANGE", uz: "Apelsin / to‘q sariq", enEmoji: "🍊🇺🇸", uzEmoji: "🧡🍊", enCap: "🇺🇸 Florida apelsinlari", uzCap: "🇺🇿 Shirin apelsin va to‘q sariq rang", enQuery: "fresh oranges slices", uzQuery: "orange fruit market", exEn: "Orange juice is full of Vitamin C.", exUz: "Apelsin sharbati C vitaminiga boy.", note: "Ham meva nomi, ham rang nomi." },
+        { en: "TOMATO", uz: "Pomidor", enEmoji: "🍅🇺🇸", uzEmoji: "🍅🇺🇿", enCap: "🇺🇸 Burger ichidagi pomidor", uzCap: "🇺🇿 O‘zbekistonning sersuv qizil pomidorlari", enQuery: "fresh red tomatoes", uzQuery: "ripe garden tomatoes", exEn: "Add a fresh tomato to the salad.", exUz: "Salatga yangi pomidor qo‘shing.", note: "Ko‘plik shakli: 'tomatoes' (-es qo‘shiladi)." },
+        { en: "POUND", uz: "Funt (pul / vazn)", enEmoji: "💷🇬🇧", uzEmoji: "⚖️💰", enCap: "🇬🇧 Buyuk Britaniya pul birligi (£)", uzCap: "🇺🇿 Og‘irlik o‘lchovi (1 funt ≈ 0.45 kg)", enQuery: "british pound banknotes", uzQuery: "vintage weighing scale", exEn: "This book costs ten pounds.", exUz: "Bu kitob o‘n funt turadi.", note: "Britaniyada pul birligi (£), AQSHda esa vazn o‘lchovi (lb)." },
+        { en: "TEXT MESSAGE", uz: "SMS xabar", enEmoji: "📱💬", uzEmoji: "📲✉️", enCap: "🇺🇸 Smartfonda tezkor xabar yozish", uzCap: "🇺🇿 Do‘stlarga SMS yuborish", enQuery: "texting on smartphone", uzQuery: "mobile phone message", exEn: "Send me a text message later.", exUz: "Menga keyinroq SMS xabar yuboring.", note: "Qisqacha qilib 'text' deb ham ishlatiladi ('Text me!')." },
+        { en: "IN FACT", uz: "Aslida", enEmoji: "🧐💡", uzEmoji: "☝️✨", enCap: "🇺🇸 Haqiqiy faktni keltirish", uzCap: "🇺🇿 'Aslini olganda...'", enQuery: "lightbulb idea concept", uzQuery: "magnifying glass fact", exEn: "In fact, he is very smart.", exUz: "Aslida, u juda aqlli.", note: "Fikrni kuchaytirish yoki aniqlik kiritish uchun ishlatiladi." },
+        { en: "COME ON", uz: "Qani / bo‘la qol", enEmoji: "🏃‍♂️💨", uzEmoji: "👏🔥", enCap: "🇺🇸 'Come on, let's go!'", uzCap: "🇺🇿 'Qani, olg‘a!'", enQuery: "cheering friends sports", uzQuery: "running forward motivation", exEn: "Come on, we are going to be late!", exUz: "Bo‘la qol, kech qolamiz!", note: "Ohangga qarab 'shoshil', 'ishonmayman' yoki 'olg‘a' ma'nolarini beradi." },
+        { en: "SOMETHING", uz: "Nimadir", enEmoji: "🎁❓", uzEmoji: "✨📦", enCap: "🇺🇸 Sirli sovg‘a yoki narsa", uzCap: "🇺🇿 Qiziqarli nimadir", enQuery: "mystery gift box", uzQuery: "wrapped present", exEn: "I want to tell you something.", exUz: "Senga nimadir aytmoqchiman.", note: "Darak gaplarda 'something', savol va inkor gaplarda 'anything' ishlatiladi." },
+        { en: "CERTAINLY", uz: "Albatta", enEmoji: "🎩✅", uzEmoji: "🤝😊", enCap: "🇬🇧 Britancha muloyim rozilik", uzCap: "🇺🇿 Bajonidil va albatta!", enQuery: "thumbs up approval", uzQuery: "polite nod smile", exEn: "Can you help me? — Certainly!", exUz: "Yordam bera olasizmi? — Albatta!", note: "'Yes' yoki 'Of course' dan ko‘ra rasmiyroq va chiroyliroq javob." },
+        { en: "HERE YOU ARE", uz: "Mana, marhamat", enEmoji: "☕🤲", uzEmoji: "🫓🤲", enCap: "🇺🇸 Kofeni uzatayotganda", uzCap: "🇺🇿 Mehmonga choy uzatayotganda", enQuery: "handing coffee cup", uzQuery: "serving tea hospitality", exEn: "Here you are, your coffee.", exUz: "Mana, marhamat, qahvangiz.", note: "Birovga biror narsa uzatayotganda albatta aytiladigan ibora." },
+        { en: "QUITE", uz: "Ancha / juda", enEmoji: "👍😌", uzEmoji: "👌✨", enCap: "🇬🇧 Britaniya: 'Quite good' (ancha yaxshi)", uzCap: "🇺🇿 Ancha qiziqarli va yoqimli", enQuery: "cozy coffee shop", uzQuery: "pleasant park walk", exEn: "The movie was quite good.", exUz: "Kino ancha yaxshi ekan.", note: "'Quiet' (tinch) so‘zi bilan adashtirmang — harflar o‘rniga e'tibor bering!" },
+        { en: "COUSIN", uz: "Amakivachcha / xolavachcha", enEmoji: "👫🇺🇸", uzEmoji: "👨‍👩‍👧‍👦🇺🇿", enCap: "🇺🇸 Qarindosh aka-uka yoki opa-singil", uzCap: "🇺🇿 O‘zbeklarda katta qarindoshlar davrasi", enQuery: "young cousins smiling", uzQuery: "extended family gathering", exEn: "My cousin lives in Tashkent.", exUz: "Amakivachcham Toshkentda yashaydi.", note: "Ingliz tilida amakivachcha, tog‘avachcha, xolavachcha va ammavachcha — hammasi bitta so‘z: 'cousin'!" },
+        { en: "TALK TO YOU LATER", uz: "Keyinroq gaplashamiz", enEmoji: "📱👋", uzEmoji: "☎️😊", enCap: "🇺🇸 Qisqartmasi: TTYL", uzCap: "🇺🇿 Xayrlashganda aytiladigan samimiy ibora", enQuery: "waving goodbye phone", uzQuery: "smiling phone call", exEn: "I'm busy now, talk to you later!", exUz: "Hozir bandman, keyinroq gaplashamiz!", note: "SMS va chatlarda inglizlar buni 'TTYL' deb qisqartirib yozishadi." },
+        { en: "SEE YOU SOON", uz: "Tez orada ko‘rishamiz", enEmoji: "👋😊", uzEmoji: "🤝🇺🇿", enCap: "🇺🇸 Yaqin orada uchrashish umidi", uzCap: "🇺🇿 'Yana ko‘rishguncha!'", enQuery: "friends waving goodbye", uzQuery: "warm handshake farewell", exEn: "Goodbye and see you soon!", exUz: "Xayr, tez orada ko‘rishamiz!", note: "Do‘stona va iliq xayrlashuv." },
+        { en: "GLASS OF", uz: "Bir stakan", enEmoji: "🥛💧", uzEmoji: "🍹🧊", enCap: "🇺🇸 Shisha stakanda suv yoki sharbat", uzCap: "🇺🇿 Yozda muzdek sharbat to‘la stakan", enQuery: "glass of water", uzQuery: "glass of fruit juice", exEn: "Give me a glass of water.", exUz: "Menga bir stakan suv bering.", note: "Issiq ichimliklar uchun 'a cup of' (bir piyola/chashka), sovuq ichimliklar uchun 'a glass of' ishlatiladi." },
+        { en: "BORING", uz: "Zerikarli", enEmoji: "🥱💤", uzEmoji: "😑📉", enCap: "🇺🇸 Zerikarli ma'ruza yoki film", uzCap: "🇺🇿 Hech narsa qilmasdan zerikish", enQuery: "bored person yawning", uzQuery: "sleeping at desk", exEn: "Learning shouldn't be boring.", exUz: "O‘rganish zerikarli bo‘lmasligi kerak.", note: "Narsa zerikarli bo‘lsa — 'boring', odam zerikkan bo‘lsa — 'bored'!" },
+        { en: "KINDS", uz: "Turlar", enEmoji: "🍱🎨", uzEmoji: "🍵🌿", enCap: "🇺🇸 Turli xil mahsulot turlari", uzCap: "🇺🇿 Ko‘k, qora va giyohli choy turlari", enQuery: "variety of spices", uzQuery: "different types of tea", exEn: "There are many kinds of tea.", exUz: "Choyning ko‘plab turlari bor.", note: "'Types of' so‘zi bilan ma'nodosh." },
+        { en: "MEALS", uz: "Taomlar / ovqatlanishlar", enEmoji: "🍽️🕒", uzEmoji: "🥘🍲", enCap: "🇺🇸 Kuniga 3 mahal ovqatlanish", uzCap: "🇺🇿 Ertalabki, tushki va kechki dasturxon", enQuery: "three meals a day", uzQuery: "uzbek feast table", exEn: "Eat three healthy meals a day.", exUz: "Kuniga uch mahal foydali ovqatlaning.", note: "Breakfast, lunch va dinner — bularning hammasi 'meals'." },
+        { en: "WORK DAYS", uz: "Ish kunlari", enEmoji: "💼💻", uzEmoji: "🏢📋", enCap: "🇺🇸 Dushanbadan jumagacha ish haftasi", uzCap: "🇺🇿 O‘qish va ish kunlari", enQuery: "office desk laptop", uzQuery: "busy city street morning", exEn: "Monday to Friday are work days.", exUz: "Dushanbadan jumagacha ish kunlari.", note: "Qarama-qarshisi: 'weekend' (dam olish kunlari)." },
+        { en: "SLICE OF", uz: "Bir tilim", enEmoji: "🍕🇺🇸", uzEmoji: "🍉🍈", enCap: "🇺🇸 Nyu-York: Bir tilim pitsa", uzCap: "🇺🇿 Mirzacho‘l: Bir tilim shirin qovun", enQuery: "slice of pepperoni pizza", uzQuery: "slice of sweet melon", exEn: "I ate a slice of pizza.", exUz: "Men bir tilim pitsa yedim.", note: "Yupqa kesilgan narsalar (pitsa, non, pishloq, qovun) uchun ishlatiladi." },
+        { en: "WEEKEND", uz: "Dam olish kunlari", enEmoji: "🏕️🎸", uzEmoji: "🏞️👨‍👩‍👧‍👦", enCap: "🇺🇸 Shanba va Yakshanba sayohati", uzCap: "🇺🇿 Dam olish kuni oilaviy sayr", enQuery: "camping weekend nature", uzQuery: "family picnic park", exEn: "Have a great weekend!", exUz: "Dam olish kunlaringiz yaxshi o‘tsin!", note: "Juma kuni kechqurun G‘arbda hamma bir-biriga 'Have a nice weekend!' deb tilak bildiradi." },
+        { en: "BIG MEAL", uz: "Katta / to‘yimli taom", enEmoji: "🍗🍖", uzEmoji: "🥘🎉", enCap: "🇺🇸 Bayramona kurka go‘shti (Thanksgiving)", uzCap: "🇺🇿 To‘y va mehmondorchilik oshi", enQuery: "roast turkey feast", uzQuery: "uzbek wedding plov", exEn: "Don't eat a big meal before sleep.", exUz: "Uxlashdan oldin og‘ir ovqat yemang.", note: "To‘yimli va katta hajmdagi ovqatlanish." },
+        { en: "AFTER", uz: "Keyin", enEmoji: "➡️🌅", uzEmoji: "🚶‍♂️🌙", enCap: "🇺🇸 Ishdan keyingi dam olish", uzCap: "🇺🇿 Kechki ovqatdan keyingi sayr", enQuery: "sunset walk after work", uzQuery: "evening park walk", exEn: "Let's walk after dinner.", exUz: "Kechki ovqatdan keyin sayr qilaylik.", note: "Qarama-qarshisi: 'before' (oldin)." },
+        { en: "WANT", uz: "Xohlamoq", enEmoji: "🎯🚀", uzEmoji: "🎓✨", enCap: "🇺🇸 Katta maqsadlarni xohlash", uzCap: "🇺🇿 Bilim va muvaffaqiyatga intilish", enQuery: "target goal arrow", uzQuery: "graduation cap success", exEn: "I want to learn cybersecurity.", exUz: "Men kiberxavfsizlikni o‘rganishni xohlayman.", note: "'Want to + fe'l' shaklida ishlatiladi." },
+        { en: "HOT DRINKS", uz: "Issiq ichimliklar", enEmoji: "☕🍫", uzEmoji: "🫖🍋", enCap: "🇺🇸 Issiq shokolad va latte", uzCap: "🇺🇿 Limonli issiq choy va novvot", enQuery: "hot chocolate marshmallows", uzQuery: "hot lemon tea", exEn: "Tea and coffee are hot drinks.", exUz: "Choy va qahva issiq ichimliklardir.", note: "Qish kunlarida eng kerakli ichimliklar." },
+        { en: "CAN I HAVE", uz: "Menga ... bersangiz bo‘ladimi?", enEmoji: "🙋‍♂️🍔", uzEmoji: "🙏🫓", enCap: "🇺🇸 Kafeda buyurtma berish", uzCap: "🇺🇿 Muloyimlik bilan so‘rash", enQuery: "ordering food cafe", uzQuery: "bakery fresh bread", exEn: "Can I have the menu, please?", exUz: "Menga menyuni bersangiz bo‘ladimi?", note: "Eng ko‘p ishlatiladigan xushmuomala so‘rov iborasi." },
+        { en: "HOW MANY", uz: "Nechta", enEmoji: "🔢🍎", uzEmoji: "🧮🍑", enCap: "🇺🇸 Sanaladigan narsalar sonini so‘rash", uzCap: "🇺🇿 'Nechta olma kerak?'", enQuery: "counting apples", uzQuery: "basket of peaches", exEn: "How many apples do you need?", exUz: "Sizga nechta olma kerak?", note: "Sanaladigan otlar uchun 'How many', sanalmaydiganlar (suv, pul, vaqt) uchun 'How much'!" },
+        { en: "DISH", uz: "Taom / idish", enEmoji: "🍲🍽️", uzEmoji: "🍽️🇺🇿", enCap: "🇺🇸 Maxsus restoran taomi", uzCap: "🇺🇿 Milliy laganda tortilgan taom", enQuery: "gourmet restaurant dish", uzQuery: "uzbek ceramic plate lagan", exEn: "Plov is our national dish.", exUz: "Osh — bizning milliy taomimiz.", note: "Ham 'idish-tovoq' (wash the dishes), ham 'maxsus taom' (national dish) ma'nosini beradi." }
+    ];
+
+    let queue = JSON.parse(localStorage.getItem('v2_unit3_queue')) || [...cardsData];
+    let mastered = JSON.parse(localStorage.getItem('v2_unit3_mastered')) || [];
+    let xp = parseInt(localStorage.getItem('v2_unit3_xp')) || 0;
+    let streak = 0;
+    let isFlipped = false;
+    let enFirst = true; // true: 🇺🇸 -> 🇺🇿, false: 🇺🇿 -> 🇺🇸
+
+    // Tovush effekti (Web Audio API)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function beep(freq, duration) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    // Wikimedia Commons API orqali haqiqiy rasmni topish (sinmaydigan bepul rasm qidiruvi)
+    const imageCache = {};
+    async function fetchRealPhoto(query, imgElement) {
+        imgElement.classList.remove('loaded');
+        imgElement.style.display = 'block';
+
+        if (imageCache[query]) {
+            imgElement.src = imageCache[query];
+            return;
+        }
+
+        try {
+            const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&iiurlwidth=600&format=json&origin=*`;
+            const res = await fetch(url);
+            const data = await res.json();
+            const pages = data.query?.pages;
+            if (pages) {
+                const firstPage = Object.values(pages)[0];
+                const thumbUrl = firstPage.imageinfo?.[0]?.thumburl;
+                if (thumbUrl && !thumbUrl.endsWith('.svg') && !thumbUrl.endsWith('.ogg')) {
+                    imageCache[query] = thumbUrl;
+                    imgElement.src = thumbUrl;
+                    return;
+                }
+            }
+            imgElement.style.display = 'none';
+        } catch (e) {
+            imgElement.style.display = 'none';
+        }
+    }
+
+    function saveProgress() {
+        localStorage.setItem('v2_unit3_queue', JSON.stringify(queue));
+        localStorage.setItem('v2_unit3_mastered', JSON.stringify(mastered));
+        localStorage.setItem('v2_unit3_xp', xp);
+    }
+
+    function renderCard() {
+        document.getElementById('streak').textContent = streak;
+        document.getElementById('xp').textContent = xp;
+        document.getElementById('done-count').textContent = mastered.length;
+
+        const pct = Math.round((mastered.length / cardsData.length) * 100);
+        document.getElementById('progress-fill').style.width = pct + '%';
+        document.getElementById('percent-label').textContent = pct + '%';
+        document.getElementById('remaining-label').textContent = `Qolgan so‘zlar: ${queue.length} ta`;
+
+        if (queue.length === 0) {
+            document.getElementById('card-scene').style.display = 'none';
+            document.getElementById('controls-area').style.display = 'none';
+            document.getElementById('finish-box').style.display = 'block';
+            return;
+        } else {
+            document.getElementById('card-scene').style.display = 'block';
+            document.getElementById('controls-area').style.display = 'grid';
+            document.getElementById('finish-box').style.display = 'none';
+        }
+
+        isFlipped = false;
+        document.getElementById('card').classList.remove('is-flipped');
+
+        const item = queue[0];
+        const frontImg = document.getElementById('front-img');
+        const backImg = document.getElementById('back-img');
+
+        setTimeout(() => {
+            if (enFirst) {
+                // Oldi: Ingliz/G'arb, Orqasi: O'zbek/Milliy
+                document.getElementById('front-pill').textContent = "🇺🇸 Western / English Context";
+                document.getElementById('front-emoji').textContent = item.enEmoji;
+                document.getElementById('front-caption').textContent = item.enCap;
+                document.getElementById('front-word').textContent = item.en;
+                document.getElementById('front-ex').textContent = `"${item.exEn}"`;
+                document.getElementById('front-hint').textContent = "Aylantiring — O‘zbekiston muhitidagi rasmi chiqadi 👆";
+                fetchRealPhoto(item.enQuery, frontImg);
+
+                document.getElementById('back-pill').textContent = "🇺🇿 O‘zbekiston Muhiti";
+                document.getElementById('back-emoji').textContent = item.uzEmoji;
+                document.getElementById('back-caption').textContent = item.uzCap;
+                document.getElementById('back-word').textContent = item.uz;
+                document.getElementById('back-ex').textContent = item.exUz;
+                document.getElementById('back-note').textContent = "💡 " + item.note;
+                fetchRealPhoto(item.uzQuery, backImg);
+            } else {
+                // Oldi: O'zbek/Milliy, Orqasi: Ingliz/G'arb
+                document.getElementById('front-pill').textContent = "🇺🇿 O‘zbekiston Muhiti";
+                document.getElementById('front-emoji').textContent = item.uzEmoji;
+                document.getElementById('front-caption').textContent = item.uzCap;
+                document.getElementById('front-word').textContent = item.uz;
+                document.getElementById('front-ex').textContent = item.exUz;
+                document.getElementById('front-hint').textContent = "Aylantiring — AQSH/Britaniya muhitidagi rasmi chiqadi 👆";
+                fetchRealPhoto(item.uzQuery, frontImg);
+
+                document.getElementById('back-pill').textContent = "🇺🇸 Western / English Context";
+                document.getElementById('back-emoji').textContent = item.enEmoji;
+                document.getElementById('back-caption').textContent = item.enCap;
+                document.getElementById('back-word').textContent = item.en;
+                document.getElementById('back-ex').textContent = `"${item.exEn}"`;
+                document.getElementById('back-note').textContent = "💡 " + item.note;
+                fetchRealPhoto(item.enQuery, backImg);
+            }
+        }, 120);
+    }
+
+    function flipCard() {
+        isFlipped = !isFlipped;
+        document.getElementById('card').classList.toggle('is-flipped');
+        beep(isFlipped ? 480 : 380, 0.08);
+    }
+
+    function toggleDirection() {
+        enFirst = !enFirst;
+        document.getElementById('dir-btn').textContent = enFirst ? "🇺🇸 ➔ 🇺🇿" : "🇺🇿 ➔ 🇺🇸";
+        renderCard();
+    }
+
+    function markEasy() {
+        if (queue.length === 0) return;
+        beep(660, 0.15);
+        mastered.push(queue.shift());
+        streak++;
+        xp += 10 + streak * 2;
+        saveProgress();
+        renderCard();
+    }
+
+    function markHard() {
+        if (queue.length === 0) return;
+        beep(240, 0.2);
+        streak = 0;
+        const word = queue.shift();
+        queue.splice(Math.min(3, queue.length), 0, word);
+        saveProgress();
+        renderCard();
+    }
+
+    function shuffleWords() {
+        for (let i = queue.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [queue[i], queue[j]] = [queue[j], queue[i]];
+        }
+        saveProgress();
+        renderCard();
+    }
+
+    function resetProgress() {
+        if (confirm("Barcha natijani nollab, boshidan boshlaysizmi?")) {
+            queue = [...cardsData];
+            mastered = [];
+            xp = 0;
+            streak = 0;
+            saveProgress();
+            renderCard();
+        }
+    }
+
+    function speakText(text, rate = 0.9) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'en-US';
+        msg.rate = rate;
+        window.speechSynthesis.speak(msg);
+    }
+
+    function speakWord(e, rate) {
+        e.stopPropagation();
+        if (queue.length > 0) speakText(queue[0].en, rate);
+    }
+
+    function speakExample(e) {
+        e.stopPropagation();
+        if (queue.length > 0) speakText(queue[0].exEn, 0.9);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (queue.length === 0) return;
+        if (e.code === 'Space') { e.preventDefault(); flipCard(); }
+        else if (e.code === 'ArrowRight') markEasy();
+        else if (e.code === 'ArrowLeft') markHard();
+    });
+
+    renderCard();
+</script>
+
+</body>
+</html>
